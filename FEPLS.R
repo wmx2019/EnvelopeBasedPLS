@@ -460,11 +460,11 @@ sfpedir <- function(X_list,Y,ux,tx.list,x.knots.list,x.order.list,u.selected=FAL
       if(dim(Y.cord)[2]==1){
          # Old method works for one dimensional scalar response
          mpcr <- pls::pcr(Y.cord~X.cord,validation="CV")
-         ncomp.pcr <- pls::selectNcomp(mpcr,"onesigma")
+         ncomp.pcr <- pls::selectNcomp(mpcr,"randomization")
          mpcr <- pls::pcr(Y.cord~X.cord,validation="CV",ncomp=ncomp.pcr)
          
          mpls <- pls::plsr(Y.cord~X.cord,method = "simpls",validation="CV")
-         ncomp.pls <- pls::selectNcomp(mpls,"onesigma")
+         ncomp.pls <- pls::selectNcomp(mpls,"randomization")
          mpls <- pls::plsr(Y.cord~X.cord,method = "simpls",ncomp=ncomp.pls,validation="CV")
       }
       else{
@@ -1153,7 +1153,8 @@ cfelmdir <- function(X_list,Y,ux,tx.list,x.knots.list,x.order.list,u.selected=FA
    # spbasis.x.list <- NULL
    p <- length(X_list)
    if(p!=length(tx.list) | p!=length(x.knots.list)){
-      stop("X_list, tx.list, and x.knots.list's length must be same.")
+      stop("X_list, tx.list, and x.knots.
+           list's length must be same.")
    }
    
    tmp <- get_coord_dir_sy_sp(X_list=X_list,tx.list=tx.list,x.knots.list=x.knots.list,x.order.list=x.order.list)

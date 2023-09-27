@@ -3,18 +3,25 @@ library(fda.usc)
 library(doFuture)
 library(doRNG)
 source("FEPLS.R")
-data("gasoline")
+source("Data_Preprocess.R")
+
+data("tecator")
+t_rescale <- function(t0){
+   return((t0-min(t0))/(max(t0)-min(t0)))
+}
 
 
-X <- gasoline$NIR
+X <- tecator$absorp.fdata$data
+
 X.fd <- fdata(X)
 plot(X.fd)
-
-
-t <- seq(0,1,1/400)
+t <- t_rescale(tecator$absorp.fdata$argvals)
 X_list <- list(X=X)
-Y <- as.matrix(gasoline$octane)
-knots <- seq(0,1,1/20)
+
+
+Y <- as.matrix(tecator$y$Water)
+
+knots <- seq(0,1,1/7)
 order <- 4
 tx.list <- list(t1=t)
 x.knots.list <- list(knots1=knots)

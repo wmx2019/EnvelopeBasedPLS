@@ -2,17 +2,31 @@ library(doFuture)
 library(doRNG)
 library(fda.usc)
 Sys.setenv(LANG="en")
-data(CanadianWeather)
-X <- t(CanadianWeather$monthlyPrecip)
-X_list <- list(X=X[-1,])
-Y <- t(CanadianWeather$monthlyTemp)[-1,]
+# data(CanadianWeather)
+data(DTI)
+
+
+# X <- t(CanadianWeather$monthlyPrecip)
+# X_list <- list(X=X[-1,])
+# Y <- t(CanadianWeather$monthlyTemp)[-1,]
+
+
+X <- DTI$rcst
+idx_row <- (1:dim(X)[1])[rowSums(is.na(X))==0]
+X <- X[idx_row,]
+
+Y<- DTI$rcst
+idx_row <- (1:dim(X)[1])[rowSums(is.na(X))==0]
+Y <- Y[idx_row,]
+
+
 x.knots.list <- list(knots1=seq(0,1,1/5))
 x.order.list <- list(order1=4)
 y.knots <- seq(0,1,1/4)
 y.order <- 4
-t <- seq(0,1.0,1/11)
+t <- seq(0,1.0,1/(dim(X)[2]-1))
 tx.list <- list(t1=t)
-ty <- t
+ty <- seq(0,1.0,1/(dim(Y)[2]-1))
 source("FEPLS.R")
 
 pred_error_cv <- function(X_list,Y,nfold=10){
