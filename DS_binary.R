@@ -132,13 +132,16 @@ for (i in 1:4) {
       if(is.null(Y)){
          stop("NULL")
       }
-      
+      X_train <- X_list[[1]]
+      Y_train <- Y
       
       # Test Data
       tmp <- DG_s(B_list,n=n_validation,t)
       X_list_new <- tmp$X_list
+      X_val <- X_list_new[[1]]
       Y_new <- tmp$Y
-      
+      Y_val <- Y_new
+      n_val <- n_validation
       # plot(1:n_validation,tmp$lp)
       
       
@@ -176,6 +179,7 @@ for (i in 1:4) {
       
       # Coordinates of new data
       X_new_dir <- bvfitl(X_list_new,res_dirc$basis.value.X)
+      X_val_dir <- X_new_dir
       
       # X_new_KL <- bvfit(cbindl(X_list_new),res_KL$phihat.X)
       
@@ -211,18 +215,26 @@ for (i in 1:4) {
       # )
       
       # c(1-c(pred_acc(res_dirc$beta,res_dirc$alpha,X_new_dir,Y_new)),res_dirc$ux)
-      c(1-c(pred_acc(res_dirc$beta,res_dirc$alpha,X_new_dir,Y_new),
-            pred_acc(res_dirc$betafull,res_dirc$alphafull,X_new_dir,Y_new),
-            pred_acc(coef(res_dirc$mglmnet_reg)[-1],coef(res_dirc$mglmnet_reg)[1],X_new_dir,Y_new),
-            pred_acc(Gamma_t%*%eta,alpha,X_new_dir,Y_new),sum(p1==Y_new)/n_validation,
-            pred_acc(coef(res_dirc$mgpls)[-1],coef(res_dirc$mgpls)[1],X_new_dir,Y_new)
-            
-      ),res_dirc$ux)
+      # c(1-c(pred_acc(res_dirc$beta,res_dirc$alpha,X_new_dir,Y_new),
+      #       pred_acc(res_dirc$betafull,res_dirc$alphafull,X_new_dir,Y_new),
+      #       pred_acc(coef(res_dirc$mglmnet_reg)[-1],coef(res_dirc$mglmnet_reg)[1],X_new_dir,Y_new),
+      #       pred_acc(Gamma_t%*%eta,alpha,X_new_dir,Y_new),sum(p1==Y_new)/n_validation,
+      #       pred_acc(coef(res_dirc$mgpls)[-1],coef(res_dirc$mgpls)[1],X_new_dir,Y_new)
+      #       
+      # ),res_dirc$ux)
+      
+      ncomp.gpls <- u_gpls(X_train,Y_train)
+      mgpls <- gpls::gpls(X_train,Y_train,ncomp.gpls)
+      
+      c(1-c(pred_acc(res_dirc$beta,res_dirc$alpha,X_val_dir,Y_val),pred_acc(res_dirc$betafull,res_dirc$alphafull,X_val_dir,Y_val),
+            pred_acc(coef(res_dirc$mglmnet_reg)[-1],coef(res_dirc$mglmnet_reg)[1],X_val_dir,Y_val),
+            sum(p1==Y_val)/n_val,
+            pred_acc(coef(mgpls)[-1],coef(mgpls)[1],X_val,Y_val)),res_dirc$ux,ncomp.gpls)
       
    }
    acc_M_matrix <- matrix(unlist(acc),byrow = TRUE,ncol = 7)
    
-   colnames(acc_M_matrix) <- c("envlp","fglm","fglmnet","true","classif.glm","fgpls","ux")
+   colnames(acc_M_matrix) <- c("env","fglm","fglmnet","classif.glm","fgpls","u_env","u_gpls")
    
    
    if(is.null(mis_rate)){

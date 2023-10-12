@@ -204,16 +204,20 @@ CV_pcr <- function(X,Y,n_fold=5){
    #   n_fold: number of folds
    n <- dim(X)[1]
    p <- dim(X)[2]
-   mse <- rep(0,p)
+   n_test <- n/n_fold
+   n_train <- n-n_test
+   
+   m <- min(n_train-1,p)
+   mse <- rep(0,m)
    
    for (j in 1:n_fold) {
-      idx_test <- sample(1:n,n/n_fold)
+      idx_test <- sample(1:n,n/n_test)
       idx_train <- setdiff(1:n,idx_test)
       X_train <- X[idx_train,]
-      Y_train <- Y[idx_train,]
+      Y_train <- as.matrix(Y[idx_train,])
       X_test <- X[idx_test,]
-      Y_test <- Y[idx_test,]
-      for (i in 1:p) {
+      Y_test <- as.matrix(Y[idx_test,])
+      for (i in 1:m) {
          reg <- pls::pcr(Y_train~X_train,ncomp=i)
          mse[i] <- mse[i] + MSEPs(reg,i,X_test,Y_test)
       }
@@ -230,16 +234,21 @@ CV_pls <- function(X,Y,n_fold=5){
    #   n_fold: number of folds
    n <- dim(X)[1]
    p <- dim(X)[2]
-   mse <- rep(0,p)
+   
+   n_test <- n/n_fold
+   n_train <- n-n_test
+   
+   m <- min(n_train-1,p)
+   mse <- rep(0,m)
    
    for (j in 1:n_fold) {
-      idx_test <- sample(1:n,n/n_fold)
+      idx_test <- sample(1:n,n_test)
       idx_train <- setdiff(1:n,idx_test)
       X_train <- X[idx_train,]
-      Y_train <- Y[idx_train,]
+      Y_train <- as.matrix(Y[idx_train,])
       X_test <- X[idx_test,]
-      Y_test <- Y[idx_test,]
-      for (i in 1:p) {
+      Y_test <- as.matrix(Y[idx_test,])
+      for (i in 1:m) {
          reg <- pls::plsr(Y_train~X_train,ncomp=i,method = "simpls")
          mse[i] <- mse[i] + MSEPs(reg,i,X_test,Y_test)
       }
@@ -460,11 +469,20 @@ sfpedir <- function(X_list,Y,ux,tx.list,x.knots.list,x.order.list,u.selected=FAL
       if(dim(Y.cord)[2]==1){
          # Old method works for one dimensional scalar response
          mpcr <- pls::pcr(Y.cord~X.cord,validation="CV")
-         ncomp.pcr <- pls::selectNcomp(mpcr,"randomization")
+         ncomp.pcr <- pls::selectNcomp(mpcr,"onesigma")
+         
+         if(is.null(ncomp.pcr)|ncomp.pcr==0){
+            ncomp.pcr <- CV_pcr(X.cord,Y.cord)
+         }
+         ncomp.pcr <- CV_pcr(X.cord,Y.cord)
          mpcr <- pls::pcr(Y.cord~X.cord,validation="CV",ncomp=ncomp.pcr)
          
          mpls <- pls::plsr(Y.cord~X.cord,method = "simpls",validation="CV")
-         ncomp.pls <- pls::selectNcomp(mpls,"randomization")
+         ncomp.pls <- pls::selectNcomp(mpls,"onesigma")
+         if(is.null(ncomp.pls)|ncomp.pls==0){
+            ncomp.pls <- CV_pls(X.cord,Y.cord)
+         }
+         ncomp.pls <- CV_pls(X.cord,Y.cord)
          mpls <- pls::plsr(Y.cord~X.cord,method = "simpls",ncomp=ncomp.pls,validation="CV")
       }
       else{
@@ -1126,16 +1144,19 @@ u_gpls <- function(X,Y,nfold=5){
    Y <- as.matrix(Y)
    n <- dim(X)[1]
    p <- dim(X)[2]
-   nf <- as.integer(n/nfold)
-   mse <- rep(0,p)
+   n_test <- n/nfold
+   n_train <- n-n_test
+   m <- min(n_train,p)
+   
+   mse <- rep(0,m)
    for (j in 1:nfold) {
-      idx_test <- sample(1:n,nf)
+      idx_test <- sample(1:n,n_test)
       idx_train <- setdiff(1:n,idx_test)
       X_train <- X[idx_train,]
       Y_train <- Y[idx_train,]
       X_test <- X[idx_test,]
       Y_test <- Y[idx_test,]
-      for (i in 1:p) {
+      for (i in 1:m) {
          gpls1 <- gpls::gpls(X_train,Y_train,i)
          # gpls(Y_train~X_train,K.prov = i)
          y_test_pred <- pred_logit(coef(gpls1)[-1],coef(gpls1)[1],X_test)
@@ -1147,7 +1168,7 @@ u_gpls <- function(X,Y,nfold=5){
 }
 
 # Generalized function envelope linear model for categorical response
-cfelmdir <- function(X_list,Y,ux,tx.list,x.knots.list,x.order.list,u.selected=FALSE,alpha=0.01,init=NULL){
+cfelmdir <- function(X_list,Y,ux,tx.list,x.knots.list,x.order.list,u.selected=FALSE,alpha=0.01,init=NULL,do.gpls=F){
    # Direct methods with spline basis
    # X_i and Y use the same spline bases
    # spbasis.x.list <- NULL
@@ -1177,14 +1198,24 @@ cfelmdir <- function(X_list,Y,ux,tx.list,x.knots.list,x.order.list,u.selected=FA
       
       # u.mat1 <- u_env_glm1(X.cord,Y.cord)
       # ux1 <- u.mat1$u
-      
-      ncomp.gpls <- u_gpls(X.cord,Y.cord)
-      mgpls <- gpls::gpls(X.cord,Y.cord,ncomp.gpls)
+      if(do.gpls){
+         ncomp.gpls <- u_gpls(X.cord,Y.cord)
+         mgpls <- gpls::gpls(X.cord,Y.cord,ncomp.gpls)
+      }
+      else{
+         ncomp.gpls <- NULL
+         mgpls <- NULL
+      }
       
    }
    else{
       ncomp.gpls <- ux
-      mgpls <- gpls::gpls(X.cord,Y.cord,ncomp.gpls)
+      if(do.gpls){
+         mgpls <- gpls::gpls(X.cord,Y.cord,ncomp.gpls)
+      }
+      else{
+         mgpls <- NULL
+      }
       ux1 <- ux
    }
    
@@ -1199,7 +1230,7 @@ cfelmdir <- function(X_list,Y,ux,tx.list,x.knots.list,x.order.list,u.selected=FA
    # return(list(beta=menv$beta,betafull=mfull$beta,alpha=menv$alpha,alphafull=mfull$alpha,
    #             basis.value.X=basis.value.x.list,ux=ux,OX=OX))
    return(list(beta=menv$beta,betafull=mfull$beta,alpha=menv$alpha,alphafull=mfull$alpha,
-               basis.value.X=basis.value.x.list,ux=ux,OX=OX,mglmnet_reg=mglmnet_reg,mgpls=mgpls))
+               basis.value.X=basis.value.x.list,ux=ux,OX=OX,mglmnet_reg=mglmnet_reg,mgpls=mgpls,ncomp.gpls=ncomp.gpls))
    # return(list(beta=menv$beta,betafull=mfull$beta,alpha=menv$alpha,alphafull=mfull$alpha,
    #             basis.value.X=basis.value.x.list,ux=ux,OX=OX,mglmnet_reg=mglmnet_reg,mgpls=mgpls,
    #             beta1=menv1$beta,alpha1=menv1$alpha,ux1=ux1))
