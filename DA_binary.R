@@ -99,6 +99,6 @@ pmr <- foreach(i=1:n_sim) %dopar% {
          pred_acc(coef(res_dirc$mgpls)[-1],coef(res_dirc$mgpls)[1],X_val_dir,Y_val)),res_dirc$ux,res_dirc$ncomp.gpls)
 }
 pmr_M_matrix <- matrix(unlist(pmr),byrow = TRUE,ncol = 7)
-colnames(pmr_M_matrix) <- c("env","fglm","fglmnet","classif.glm","gpls","u_env","u_gpls")
+colnames(pmr_M_matrix) <- c("env","fglm","fglmnet","classif.glm","fgpls","u_env","u_gpls")
 
 colMeans(pmr_M_matrix)

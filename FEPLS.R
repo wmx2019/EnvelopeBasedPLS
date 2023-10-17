@@ -469,19 +469,19 @@ sfpedir <- function(X_list,Y,ux,tx.list,x.knots.list,x.order.list,u.selected=FAL
       if(dim(Y.cord)[2]==1){
          # Old method works for one dimensional scalar response
          mpcr <- pls::pcr(Y.cord~X.cord,validation="CV")
-         ncomp.pcr <- pls::selectNcomp(mpcr,"onesigma")
-         
-         if(is.null(ncomp.pcr)|ncomp.pcr==0){
-            ncomp.pcr <- CV_pcr(X.cord,Y.cord)
-         }
+         # ncomp.pcr <- pls::selectNcomp(mpcr,"onesigma")
+         # 
+         # if(is.null(ncomp.pcr)|ncomp.pcr==0){
+         #    ncomp.pcr <- CV_pcr(X.cord,Y.cord)
+         # }
          ncomp.pcr <- CV_pcr(X.cord,Y.cord)
          mpcr <- pls::pcr(Y.cord~X.cord,validation="CV",ncomp=ncomp.pcr)
          
          mpls <- pls::plsr(Y.cord~X.cord,method = "simpls",validation="CV")
-         ncomp.pls <- pls::selectNcomp(mpls,"onesigma")
-         if(is.null(ncomp.pls)|ncomp.pls==0){
-            ncomp.pls <- CV_pls(X.cord,Y.cord)
-         }
+         # ncomp.pls <- pls::selectNcomp(mpls,"onesigma")
+         # if(is.null(ncomp.pls)|ncomp.pls==0){
+         #    ncomp.pls <- CV_pls(X.cord,Y.cord)
+         # }
          ncomp.pls <- CV_pls(X.cord,Y.cord)
          mpls <- pls::plsr(Y.cord~X.cord,method = "simpls",ncomp=ncomp.pls,validation="CV")
       }

@@ -1,92 +1,115 @@
+############
+# Functional
+library(refund)
+library(fda.usc)
 library(doFuture)
 library(doRNG)
-library(fda.usc)
-Sys.setenv(LANG="en")
 source("FEPLS.R")
 source("Data_Preprocess.R")
-cimis <- read.csv("cimis.csv")
-length(unique(cimis$Stn.Name))
-dat1 <- data.frame(id=cimis$Stn.Id,temp=cimis$Avg.Air.Temp..F.,dew=cimis$Avg.Dew.Point..F.
-                   ,wind=cimis$Avg.Wind.Speed..mph.,precip = cimis$Total.Precip..in.,time=cimis$Month.Year,hum=cimis$Avg.Rel.Hum....)
 
-sl <- split(dat1,f=dat1$id)
+Sys.setenv(LANG="en")
 
-idxRomve <- NULL
-for (i in 1:length(sl)) {
-   if(length(sl[[i]]$time)<12){
-      idxRomve <- c(idxRomve,i)
+nodak <- read.csv("Nodak.csv",header = T)
+head(nodak)
+
+
+date2days <- function(month,day){
+   tmp <- as.integer(c(31,28,31,30,31,30,31,31,30,31,30,31))
+   if(length(month)==1&length(day)==1){
+      return(sum(tmp[1:month])+day)
+   }
+   else if(length(month)>1){
+      return(vapply(1:length(month), function(i) return(sum(tmp[1:(month[i]-1)])+day[i]),
+                    FUN.VALUE = integer(1)))
    }
 }
 
-sl <- sl[-idxRomve]
+month <- nodak$Month
+day <- nodak$Day
+
+
+days <- date2days(month,day)
+days <- days-min(days)+1
+
+
+
+dat1 <- data.frame(Temp=nodak$Avg.Temp,WindSpeed=nodak$Avg.Wind.Speed,days=days,SolarRad=nodak$Total.Solar.Rad,Snames=nodak$Station.Name)
+sl <- split(dat1,f = dat1$Snames)
+
+
+
+remove_missing <- function(df.list,nd){
+   idx <- NULL
+   nl <- length(df.list)
+   for (i in 1:nl) {
+      if(dim(df.list[[i]])[1]<nd){
+         idx <- c(idx,i)
+      }
+   }
+   if(is.null(idx))
+      return(df.list)
+   return(df.list[-idx])
+}
+
+sl <- remove_missing(sl,60)
+
 
 ns <- length(sl)
 X1 <- NULL
 for (i in 1:ns) {
-   X1 <- rbind(X1,sl[[i]]$temp)
+   X1 <- rbind(X1,sl[[i]]$Temp)
 }
 row.names(X1) <- names(sl)
 
 X2 <- NULL
 for (i in 1:ns) {
-   X2 <- rbind(X2,sl[[i]]$dew)
+   X2 <- rbind(X2,sl[[i]]$WindSpeed)
 }
 
 row.names(X2) <- names(sl)
 
-X3 <- NULL
-for (i in 1:ns) {
-   X3 <- rbind(X3,sl[[i]]$wind)
-}
-
-row.names(X3) <- names(sl)
-
-X4 <- NULL
-for (i in 1:ns) {
-   X4 <- rbind(X4,sl[[i]]$hum)
-}
-
-row.names(X4) <- names(sl)
 
 Y <- NULL
 for (i in 1:ns) {
-   Y <- rbind(Y,sl[[i]]$precip)
+   Y <- rbind(Y,sl[[i]]$SolarRad)
 }
 row.names(Y) <- names(sl)
 
-dl <- remove_na(list(X1=X1,X2=X2,X3=X3,X4=X4,Y=Y))
+n1 <- 1
+idx <- n1:(n1+12)
 
-X1 <- dl$X1
-X2 <- dl$X2
-X3 <- dl$X3
-X4 <- dl$X4
-Y <- dl$Y
-
-
-idxRomve <- (1:nrow(Y))[rowSums(Y<1e-8)>2]
-X1 <- X1[-idxRomve,]
-X2 <- X2[-idxRomve,]
-X3 <- X3[-idxRomve,]
-X4 <- X4[-idxRomve,]
-Y <- Y[-idxRomve,]
-Y <- log(Y+1e-2)
+X1=X1[,idx]
+X2=X2[,idx]
+Y <- Y[,idx]
+Y <- log(Y)
 
 
-t <- seq(0,1.0,1/(dim(X1)[2]-1))
+X_list <- list(X1=X1,X2=X2)
+# X_list <- list(X1=X1)
 
-X_list <- list(X1=X1,X2=X2,X3=X3,X4=X4)
-x.knots.list <- list(knots1=seq(0,1,1/6),knots2=seq(0,1,1/6),knots3=seq(0,1,1/6),knots4=seq(0,1,1/6))
-x.order.list <- list(order1=4,order2=4,order3=4,order4=4)
-tx.list <- list(t1=t,t2=t,t3=t,t4=t)
 
-X_list <- list(X2=X2,X3=X3,X4=X4)
-x.knots.list <- list(knots2=seq(0,1,1/6),knots3=seq(0,1,1/6),knots4=seq(0,1,1/6))
-x.order.list <- list(order2=4,order3=4,order4=4)
-tx.list <- list(t2=t,t3=t,t4=t)
 
-y.knots <- seq(0,1,1/6)
+X.fd <- fdata(X1)
+plot(X.fd)
+
+
+
+
+x.knots.list <- list(knots1=seq(0,1,1/4),knots2=seq(0,1,1/4))
+x.order.list <- list(order1=4,order2=4)
+
+# x.knots.list <- list(knots1=seq(0,1,1/4))
+# x.order.list <- list(order1=4)
+
+y.knots <- seq(0,1,1/5)
 y.order <- 4
-ty <- seq(0,1.0,1/(dim(Y)[2]-1))
+t <- t_rescale(1:dim(X1)[2])
+tx.list <- list(t1=t,t=t)
+# tx.list <- list(t1=t)
+ty <- t
+
+
+
 
 
 res_cord <- get_coord_dir_sy_sp(X_list,tx.list,x.knots.list,x.order.list)
@@ -94,7 +117,6 @@ X.cord <- res_cord$X.cord
 res_cord <- get_coord_dir_sy_sp(list(Y=Y),list(ty=ty),list(y.knots=y.knots),list(y.order=y.order))
 Y.cord <- res_cord$X.cord
 summary(lm(Y.cord~X.cord))
-
 
 pred_error_cv <- function(X_list,Y,nfold=10){
    n <- dim(Y)[1]
@@ -155,7 +177,7 @@ pred_error_cv <- function(X_list,Y,nfold=10){
    }
    
    pse_M_matrix <- matrix(unlist(pse),byrow = TRUE,ncol = 14)
-   colnames(pse_M_matrix) <- c("env_dir","full_dir","pcr","pls","u_env_dir","u_pcr","u_pls","env_KL","full_KL","pcr","pls","u_env_KL","u_pcr","u_pls")
+   colnames(pse_M_matrix) <- c("env_dir","full_dir","pcr_dir","pls_dir","u_env_dir","u_pcr","u_pls","env_KL","full_KL","pcr_dir","pls_dir","u_env_KL","u_pcr","u_pls")
    
    return(list(pse=pse_M_matrix))
 }
@@ -164,15 +186,15 @@ pred_error_cv <- function(X_list,Y,nfold=10){
 pse <- pred_error_cv(X_list,Y,nfold = 5)
 colMeans(pse$pse)
 
-nfold = 5
-set.seed(13123)
+nfold = 30
+set.seed(36)
 n <- dim(Y)[1]
 n_val <- as.integer(n/nfold)
 idx_val <- sample(1:n,n_val)
 idx_train <- setdiff(1:n,idx_val)
 # Split the data into train and validation 
 
-idx_val <- idx_val[c(1,2)]
+idx_val <- idx_val
 Y_train <- Y[idx_train,]
 Y_val <- Y[idx_val,]
 X_list_train <- list()
@@ -197,7 +219,7 @@ Y_fdata_pred <- fdata(Y_fd_pred)
 Y_fdata_val <- fdata(Y_val,argvals = t)
 
 
+plot(Y_fd_pred,col=2)
+lines(Y_fdata_val,col=1)
 
-plot(Y_fdata_val,col=1)
-lines(Y_fd_pred, col=2)
 

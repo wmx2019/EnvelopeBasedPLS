@@ -9,8 +9,8 @@ source("FEPLS.R")
 source("Data_Preprocess.R")
 
 data(labp)
-data(labc)
 data(nirp)
+data(labc)
 data(nirc)
 
 t_rescale <- function(t0){
@@ -43,6 +43,12 @@ order <- 4
 tx.list <- list(t1=t)
 x.knots.list <- list(knots1=knots)
 x.order.list <- list(order1=order)
+
+X1 <- X[1:5,]
+basis.x <- create.bspline.basis(breaks = knots,norder=4)
+X.fd <- Data2fd(t,t(X1),basisobj = basis.x)
+plot(X.fd,col=1)
+lines(fdata(X1,argvals = t),col=2)
 
 # Coordinates w.r.t the given basis functions
 res_cord <- get_coord_dir_sy_sp(X_list,tx.list,x.knots.list,x.order.list)
