@@ -11,13 +11,10 @@
 
 rm(list = ls())
 # Required packages
-source("FEPLS.R")
 library(doFuture)
 library(doRNG)
 library(glmnet)
-library(fda.usc)
-library(xtable)
-library(mixOmics)
+source("FEPLS.R")
 Sys.setenv(LANG="en")
 
 ################################################################################
@@ -208,5 +205,4 @@ if(!file.exists("results_DS_binary.rds")){
 
 
 mmr.m <- do.call(cbind,mmr.l)
-xtable(mmr.m,digits = 3)
 print(mmr.m)

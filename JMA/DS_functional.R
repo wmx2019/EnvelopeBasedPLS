@@ -14,7 +14,6 @@ source("FEPLS.R")
 library(doFuture)
 library(doRNG)
 library(fda.usc)
-library(xtable)
 Sys.setenv(LANG="en")
 
 ################################################################################
@@ -225,8 +224,7 @@ if(!file.exists("results_DS_functional.rds")){
 mse.m <- do.call(rbind,mse.l)
 colnames(mse.m) <- c("FEPLS","FFFR","PCR","PLS")
 rownames(mse.m) <- n.v
-xtable(t(mse.m))
-print(xtable(t(mse.m)))
+print(t(mse.m))
 
 
 

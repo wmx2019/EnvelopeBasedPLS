@@ -18,7 +18,7 @@ source("Basic_Functions.R")
 ################################################################################
 # Generalized envelope linear model
 ################################################################################
-env_glm <- function(X,Y,u,type="logit",init=NULL){
+env_glm <- function(X, Y, u, asy = asy, type="logit", init=NULL){
    #' Generalized envelope linear model for logistic regression
    #'
    #' Fits an envelope model for binary response using logistic regression with
@@ -27,6 +27,7 @@ env_glm <- function(X,Y,u,type="logit",init=NULL){
    #' @param X Predictor matrix (n x p)
    #' @param Y Binary response vector (n x 1)
    #' @param u Dimension of the envelope subspace
+   #' @param asy Not implemented.
    #' @param type Model type (default: "logit")
    #' @param init Optional initial value for Gamma matrix
    #'

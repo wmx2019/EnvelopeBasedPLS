@@ -13,7 +13,6 @@ rm(list = ls())
 library(doFuture)
 library(doRNG)
 library(fda.usc)
-library(xtable)
 source("FEPLS.R")
 
 Sys.setenv(LANG = "en")
@@ -186,7 +185,6 @@ if(!file.exists("results_DS_scalar.rds")){
 
 colnames(mse) <- 25*2^(0:4)
 print(mse)
-xtable(mse)
 
 
 
