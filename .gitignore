@@ -42,6 +42,12 @@ vignettes/*.pdf
 # pkgdown site
 docs/
 
+.rds
+
+.pdf
+
+.Rproj
+
 # translation temp files
 po/*~
 
