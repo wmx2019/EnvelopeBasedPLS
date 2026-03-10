@@ -4,8 +4,8 @@ This repository contains R code for the paper:
 
 **"Envelope-based Partial Least Squares in Functional Regression"**  
 Minxuan Wu, Joseph Antonelli, Zhihua Su  
-Accepted pending minor revision at *Journal of Multivariate Analysis*  
-[arXiv:2505.14876](https://arxiv.org/abs/2505.14876)
+Published in *Journal of Multivariate Analysis*  
+[DOI: 10.1016/j.jmva.2025.105592](https://doi.org/10.1016/j.jmva.2025.105592)
 
 ## Overview
 
